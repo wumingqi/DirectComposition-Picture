@@ -142,7 +142,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Image Include="..\DComp.png" />
+    <Image Include="..\DComposition.png" />
     <Image Include="github.jpg" />
     <Image Include="QQ.ico" />
   </ItemGroup>
