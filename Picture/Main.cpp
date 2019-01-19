@@ -9,11 +9,19 @@ using std::wstring;
 #include <dcomp.h>
 #include <d2d1_3.h>
 #include <wincodec.h>
+#include <CommCtrl.h>
 
 #pragma comment(lib, "d3d11")
 #pragma comment(lib, "d2d1")
 #pragma comment(lib, "dcomp")
 #pragma comment(lib, "windowscodecs")
+#pragma comment(lib, "ComCtl32")
+
+#pragma comment(linker,"\"/manifestdependency:type='win32' \
+name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
+processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+
+static HRESULT hr = S_OK;
 
 class Application
 {
@@ -21,14 +29,16 @@ class Application
 	HWND m_hWnd;
 	UINT m_width, m_height;
 
+	static const UINT TargetCount = 2U;
+
 	ComPtr<IDCompositionDesktopDevice>	m_device;			//Composition设备
-	ComPtr<IDCompositionTarget>			m_target;			//target，针对HWND窗口
-	ComPtr<IDCompositionVisual2>		m_visual;			//根Visual
-	ComPtr<IDCompositionVirtualSurface>	m_surface;			//渲染表面
+	ComPtr<IDCompositionTarget>			m_target[TargetCount],m_targetForBtn;			//target，针对HWND窗口
+	ComPtr<IDCompositionVisual2>		m_visual[TargetCount],m_visualForBtn;			//根Visual
+	ComPtr<IDCompositionVirtualSurface>	m_surface[TargetCount],m_surfaceForBtn;			//渲染表面
 
 	ComPtr<ID2D1SolidColorBrush>		m_brush;			//一支纯色画笔
-	ComPtr<ID2D1Bitmap1>				m_bmp;				//一幅待显示位图
-	D2D1_SIZE_U							m_bmpSize;			//位图尺寸
+	ComPtr<ID2D1Bitmap1>				m_bmp[TargetCount];				//一幅待显示位图
+	D2D1_SIZE_U							m_bmpSize[TargetCount];			//位图尺寸
 
 	void Initialize()					//初始化资源
 	{
@@ -52,15 +62,20 @@ class Application
 		ComPtr<ID2D1DeviceContext> dc;
 		d2dDevice->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_ENABLE_MULTITHREADED_OPTIMIZATIONS, &dc);
 		dc->CreateSolidColorBrush(D2D1::ColorF(0x2255ff), &m_brush);
-		//LoadPictures(L"github.jpg", dc.Get(), &m_bmp);
-		LoadPictures(L"QQ.ico", dc.Get(), &m_bmp);
-		m_bmpSize = m_bmp->GetPixelSize();
-
+		
 		DCompositionCreateDevice3(d2dDevice.Get(), IID_PPV_ARGS(&m_device));
 
-		m_device->CreateTargetForHwnd(m_hWnd, FALSE, &m_target);
-		m_device->CreateVisual(&m_visual);
-		m_device->CreateVirtualSurface(m_width, m_height, DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_ALPHA_MODE_PREMULTIPLIED, &m_surface);
+		wstring filename[] = { L"QQ.ico",L"github.jpg" };
+		BOOL topmost[] = { TRUE,FALSE };
+		for (UINT i = 0; i < TargetCount; i++)
+		{
+			LoadPictures(filename[i].c_str(), dc.Get(), &m_bmp[i]);
+			m_bmpSize[i] = m_bmp[i]->GetPixelSize();
+
+			m_device->CreateTargetForHwnd(m_hWnd, topmost[i], &m_target[i]);
+			m_device->CreateVisual(&m_visual[i]);
+			m_device->CreateVirtualSurface(m_width, m_height, DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_ALPHA_MODE_PREMULTIPLIED, &m_surface[i]);
+		}
 	}
 
 	void LoadPictures(wstring filename, ID2D1DeviceContext* dc, ID2D1Bitmap1** d2Bmp)
@@ -106,39 +121,75 @@ class Application
 
 	void MakeRelaition()				//为Target设置根，为Visual设置内容
 	{
-		m_target->SetRoot(m_visual.Get());
-		m_visual->SetContent(m_surface.Get());
+		for (UINT i = 0; i < TargetCount; i++)
+		{
+			m_target[i]->SetRoot(m_visual[i].Get());
+			m_visual[i]->SetContent(m_surface[i].Get());
+		}
 	}
 
 	void Update()						//开始呈现
 	{
 		POINT offset;
 		ComPtr<ID2D1DeviceContext> dc;
-		m_surface->BeginDraw(nullptr, IID_PPV_ARGS(&dc), &offset);
-		if (dc)
+
+		for (UINT i = 0; i < TargetCount; i++)
 		{
-			dc->Clear(0);
-			dc->SetTransform(D2D1::Matrix3x2F::Translation((float)offset.x, (float)offset.y));
+			m_surface[i]->BeginDraw(nullptr, IID_PPV_ARGS(&dc), &offset);
+			if (dc)
+			{
+				dc->Clear(0);
+				dc->SetTransform(D2D1::Matrix3x2F::Translation((float)offset.x, (float)offset.y));
 
-			D2D1_RECT_F rcBmp = {
-				(m_width - m_bmpSize.width) / 2.f,
-				(m_height - m_bmpSize.height) / 2.f,
-				(m_width + m_bmpSize.width) / 2.f,
-				(m_height + m_bmpSize.height) / 2.f,
-			};
+				D2D1_RECT_F rcBmp = {
+					(m_width - m_bmpSize[i].width) / 2.f,
+					(m_height - m_bmpSize[i].height) / 2.f,
+					(m_width + m_bmpSize[i].width) / 2.f,
+					(m_height + m_bmpSize[i].height) / 2.f,
+				};
 
-			dc->DrawBitmap(m_bmp.Get(), rcBmp);
-			dc->DrawRectangle(rcBmp, m_brush.Get(),2);
+				dc->DrawBitmap(m_bmp[i].Get(), rcBmp);
+				dc->DrawRectangle(rcBmp, m_brush.Get(), 2);
+			}
+			m_surface[i]->EndDraw();
 		}
-		m_surface->EndDraw();
 		m_device->Commit();
 	}
 
 	void Resize(UINT width, UINT height)
 	{
 		m_width = width; m_height = height;
-		m_surface->Resize(width, height);
+		for(auto &surface:m_surface)
+			surface->Resize(width, height);
+		MoveChildWindow();
 		Update();
+	}
+
+	HWND m_hbt;
+
+	void CreateChildWindow()
+	{
+		m_hbt = CreateWindow(WC_BUTTON, L"Hello Button", WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, m_hWnd, 0, m_hInstance, 0);
+		m_device->CreateTargetForHwnd(m_hbt, TRUE, &m_targetForBtn);
+		m_device->CreateVisual(&m_visualForBtn);
+		m_device->CreateVirtualSurface(m_width, m_height, DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_ALPHA_MODE_PREMULTIPLIED, &m_surfaceForBtn);
+		m_targetForBtn->SetRoot(m_visualForBtn.Get());
+		m_visualForBtn->SetContent(m_surfaceForBtn.Get());
+
+		POINT offset;
+		ComPtr<ID2D1DeviceContext> dc;
+		m_surfaceForBtn->BeginDraw(nullptr, IID_PPV_ARGS(&dc), &offset);
+		dc->Clear(D2D1::ColorF(D2D1::ColorF::DarkSlateBlue, 0.5f));
+		dc->SetTransform(D2D1::Matrix3x2F::Translation((float)offset.x, (float)offset.y));
+		m_surfaceForBtn->EndDraw();
+		m_device->Commit();
+	}
+
+	void MoveChildWindow()
+	{
+		UINT btnWidth = 600U, btnHeight = 600U;
+		//MoveWindow(m_hbt, (m_width - btnHeight) / 2, (m_height - btnHeight) / 2, (m_width + btnHeight) / 2, (m_height + btnHeight) / 2, TRUE);
+		MoveWindow(m_hbt, 0, 0, btnWidth, btnHeight, TRUE);
 	}
 
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -192,9 +243,9 @@ public:
 
 		m_hWnd = CreateWindowEx(WS_EX_NOREDIRECTIONBITMAP, wc.lpszClassName, L"DComposition显示图片", WS_OVERLAPPEDWINDOW,
 			x, y, w, h, nullptr, nullptr, m_hInstance, nullptr);
-
 		SetWindowLongPtr(m_hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
 		Initialize();
+		CreateChildWindow();
 
 		ShowWindow(m_hWnd, nCmdShow);
 		MSG msg = {};
