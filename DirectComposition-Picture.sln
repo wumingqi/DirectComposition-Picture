@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2016
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Picture", "Picture\Picture.vcxproj", "{510971EE-A1A3-4A27-A5F4-5680AE7ED91A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{510971EE-A1A3-4A27-A5F4-5680AE7ED91A}.Debug|x64.ActiveCfg = Debug|x64
+		{510971EE-A1A3-4A27-A5F4-5680AE7ED91A}.Debug|x64.Build.0 = Debug|x64
+		{510971EE-A1A3-4A27-A5F4-5680AE7ED91A}.Debug|x86.ActiveCfg = Debug|Win32
+		{510971EE-A1A3-4A27-A5F4-5680AE7ED91A}.Debug|x86.Build.0 = Debug|Win32
+		{510971EE-A1A3-4A27-A5F4-5680AE7ED91A}.Release|x64.ActiveCfg = Release|x64
+		{510971EE-A1A3-4A27-A5F4-5680AE7ED91A}.Release|x64.Build.0 = Release|x64
+		{510971EE-A1A3-4A27-A5F4-5680AE7ED91A}.Release|x86.ActiveCfg = Release|Win32
+		{510971EE-A1A3-4A27-A5F4-5680AE7ED91A}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1458442C-0BE5-4FF6-915A-B9A831DF5565}
+	EndGlobalSection
+EndGlobal
