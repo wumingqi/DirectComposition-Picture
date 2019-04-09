@@ -147,7 +147,6 @@
   <ItemGroup>
     <Image Include="..\DComposition.png" />
     <Image Include="github.jpg" />
-    <Image Include="png1.png" />
     <Image Include="QQ.ico" />
     <Image Include="QQ.png" />
   </ItemGroup>
@@ -161,7 +160,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
-    <None Include="jpg1.bin" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />

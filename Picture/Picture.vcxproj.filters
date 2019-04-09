@@ -24,9 +24,6 @@
     <Image Include="..\DComposition.png">
       <Filter>资源文件</Filter>
     </Image>
-    <Image Include="png1.png">
-      <Filter>资源文件</Filter>
-    </Image>
     <Image Include="QQ.png">
       <Filter>资源文件</Filter>
     </Image>
@@ -47,9 +44,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
-    <None Include="jpg1.bin">
-      <Filter>资源文件</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
