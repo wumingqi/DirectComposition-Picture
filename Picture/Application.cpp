@@ -36,10 +36,10 @@ void Application::CreateDeviceAndResources()
 	LoadPicture(IDB_Github, L"JPG");
 }
 
-void Application::MoveVisual()
+void Application::MoveVisual(float x, float y)
 {
-	m_visual->SetOffsetX((m_width - m_bmp.sizef.width) / 2.f);
-	m_visual->SetOffsetY((m_height - m_bmp.sizef.height) / 2.f);
+	m_visual->SetOffsetX(x);
+	m_visual->SetOffsetY(y);
 	m_device->Commit();
 }
 
@@ -102,7 +102,6 @@ wstring Application::OpenFile()
 
 void Application::Update()
 {
-	MoveVisual();
 	m_surface->Resize(m_bmp.sizeu.width, m_bmp.sizeu.height);
 
 	POINT offset;

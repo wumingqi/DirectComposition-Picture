@@ -13,7 +13,7 @@ class Application
 	HWND m_hWnd;
 	UINT m_width, m_height;
 
-	POINT m_offset;
+	D2D1_POINT_2F m_offset;
 
 	ComPtr<IDCompositionDesktopDevice>	m_device;			//Composition设备
 	ComPtr<IDCompositionTarget>			m_target;			//target，针对HWND窗口
@@ -27,7 +27,7 @@ class Application
 	ComPtr<IWICImagingFactory2>			m_factory;			//WIC工厂
 
 	void CreateDeviceAndResources();
-	void MoveVisual();
+	void MoveVisual(float x, float y);
 	void Update();
 	void LoadPicture(wstring filename);
 	void LoadPicture(int resourceId, LPCTSTR type);

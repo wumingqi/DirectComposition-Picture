@@ -2,7 +2,6 @@
 #include "Application.h"
 
 
-
 #define HANDLE_MSG(msg) case msg: return app.Handle_##msg(wParam, lParam);
 LRESULT CALLBACK Application::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -34,11 +33,16 @@ LRESULT Application::Handle_WM_PAINT(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
+bool flag = false;
+short x, y;
+
 ///<summary>处理WM_LBUTTONDOWN消息，鼠标左键按下时触发</summary>
 ///<param name="wParam">表示是否有虚拟按键按下，如MK_CONTROL等</param>
 ///<param name="lParam">相对于客户区左上角的光标的坐标</param>
 LRESULT Application::Handle_WM_LBUTTONDOWN(WPARAM wParam, LPARAM lParam)
 {
+	flag = true;
+	x = (short)LOWORD(lParam);y = (short)HIWORD(lParam);
 	return 0;
 }
 
@@ -47,6 +51,10 @@ LRESULT Application::Handle_WM_LBUTTONDOWN(WPARAM wParam, LPARAM lParam)
 ///<param name="lParam">相对于客户区左上角的光标的坐标</param>
 LRESULT Application::Handle_WM_LBUTTONUP(WPARAM wParam, LPARAM lParam)
 {
+	flag = false;
+	ReleaseCapture();
+	m_offset.x = m_offset.x + (short)LOWORD(lParam) - x;
+	m_offset.y = m_offset.y + (short)HIWORD(lParam) - y;
 	return 0;
 }
 
@@ -55,6 +63,14 @@ LRESULT Application::Handle_WM_LBUTTONUP(WPARAM wParam, LPARAM lParam)
 ///<param name="lParam">相对于客户区左上角的光标的坐标</param>
 LRESULT Application::Handle_WM_MOUSEMOVE(WPARAM wParam, LPARAM lParam)
 {
+	if (flag)
+	{
+		SetCapture(m_hWnd);
+		auto dx = (short)LOWORD(lParam) - x;
+		auto dy = (short)HIWORD(lParam) - y;
+
+		MoveVisual(m_offset.x+dx, m_offset.y+dy);
+	}
 	return 0;
 }
 
@@ -66,8 +82,6 @@ LRESULT Application::Handle_WM_SIZE(WPARAM wParam, LPARAM lParam)
 	UINT width = LOWORD(lParam);
 	UINT height = HIWORD(lParam);
 	m_width = width; m_height = height;
-
-	MoveVisual();
 
 	return 0;
 }

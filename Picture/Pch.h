@@ -51,7 +51,6 @@ private:
 	}
 
 public:
-	///<summary>从磁盘文件中加载图片</summary>
 	static void LoadPictureFromFile(IWICImagingFactory2* factory, ID2D1DeviceContext* dc, ID2D1Bitmap1** d2Bmp, wstring filename)
 	{
 		ComPtr<IWICBitmapDecoder> decoder;		//解码器
@@ -71,12 +70,7 @@ public:
 		CreateBitmapFromDecoder(factory, decoder.Get(), dc, d2Bmp);
 	}
 
-	static void LoadPictureFromResource(
-		IWICImagingFactory2* factory,
-		ID2D1DeviceContext* dc,
-		ID2D1Bitmap1** d2Bmp,
-		LPCWSTR name,
-		LPCWSTR type)
+	static void LoadPictureFromResource(IWICImagingFactory2* factory, ID2D1DeviceContext* dc, ID2D1Bitmap1** d2Bmp, LPCWSTR name, LPCWSTR type)
 	{
 		//1、锁定资源的位置和大小
 		auto imageResHandle = FindResource(nullptr, name, type);
