@@ -2,6 +2,7 @@
 #include <wrl.h>
 using Microsoft::WRL::ComPtr;
 
+#include <list>
 #include <string>
 using std::wstring;
 
@@ -92,5 +93,64 @@ public:
 			&decoder);
 
 		CreateBitmapFromDecoder(factory, decoder.Get(), dc, d2Bmp);
+	}
+
+
+	static wstring OpenFile(HWND hWnd)
+	{
+		OPENFILENAME ofn;       // common dialog box structure
+		TCHAR szFile[260];       // buffer for file name
+
+		ZeroMemory(&ofn, sizeof(ofn));
+		ofn.lStructSize = sizeof(ofn);
+		ofn.hwndOwner = hWnd;
+		ofn.lpstrFile = szFile;
+		// Set lpstrFile[0] to '\0' so that GetOpenFileName does not 
+		// use the contents of szFile to initialize itself.
+		ofn.lpstrFile[0] = L'\0';
+		ofn.nMaxFile = sizeof(szFile);
+		ofn.lpstrFilter = L"图像文件\0*.jpg;*.png;*bmp;*tiff\0所有文件\0*.*\0";
+		ofn.nFilterIndex = 1;
+		ofn.lpstrFileTitle = L"选择图像文件";
+		ofn.nMaxFileTitle = 0;
+		ofn.lpstrInitialDir = NULL;
+		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+		if (GetOpenFileName(&ofn) == TRUE)
+		{
+			return szFile;
+		}
+		else
+		{
+			return L"";
+		}
+
+	}
+
+	static ComPtr<IDCompositionEffect> CreateEffect1(IDCompositionDevice2* device,float degree, float centerX, float centerY, float centerZ)
+	{
+		ComPtr<IDCompositionAnimation> ani;
+		device->CreateAnimation(&ani);
+		ani->AddCubic(0.0, 0.0, degree, 0.0, 0.0);
+		ani->End(1.0, degree);
+
+		ComPtr<IDCompositionRotateTransform3D> eff;
+		device->CreateRotateTransform3D(&eff);
+		eff->SetAngle(ani.Get());
+		eff->SetCenterX(centerX);
+		eff->SetCenterY(centerY);
+		eff->SetCenterZ(centerZ);
+
+		eff->SetAxisZ(1);
+
+		return { eff.Get() };
+	}
+
+
+	static void Log(wstring msg)
+	{
+		static auto hStd = GetStdHandle(STD_OUTPUT_HANDLE);
+		DWORD n;
+		WriteConsole(hStd, msg.data(), msg.length(), &n, nullptr);
 	}
 };

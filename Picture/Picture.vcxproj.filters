@@ -41,6 +41,9 @@
     <ClCompile Include="Callback.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Picture.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
@@ -56,6 +59,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Exceptions.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Picture.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

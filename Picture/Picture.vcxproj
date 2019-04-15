@@ -157,6 +157,7 @@
     <ClCompile Include="Pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Picture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
@@ -165,6 +166,7 @@
     <ClInclude Include="Application.h" />
     <ClInclude Include="Exceptions.h" />
     <ClInclude Include="Pch.h" />
+    <ClInclude Include="Picture.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>

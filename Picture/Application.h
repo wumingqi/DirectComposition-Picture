@@ -1,11 +1,5 @@
 #pragma once
-
-struct Bitmap
-{
-	ComPtr<ID2D1Bitmap1>	data;
-	D2D1_SIZE_F				sizef;
-	D2D1_SIZE_U				sizeu;
-};
+#include "Picture.h"
 
 class Application
 {
@@ -13,33 +7,27 @@ class Application
 	HWND m_hWnd;
 	UINT m_width, m_height;
 
-	D2D1_POINT_2F m_offset;
-
 	ComPtr<IDCompositionDesktopDevice>	m_device;			//Composition设备
 	ComPtr<IDCompositionTarget>			m_target;			//target，针对HWND窗口
-	ComPtr<IDCompositionVisual2>		m_visual;			//根Visual
-	ComPtr<IDCompositionVirtualSurface>	m_surface;			//渲染表面
+	ComPtr<IDCompositionVisual2>		m_root;				//根Visual
 
 	ComPtr<ID2D1DeviceContext>			m_dc;				//DC，用来创建资源
-	ComPtr<ID2D1SolidColorBrush>		m_brush;			//一支纯色画笔
-	Bitmap								m_bmp;
+	std::list<Picture>					m_bmps;
 
 	ComPtr<IWICImagingFactory2>			m_factory;			//WIC工厂
 
 	void CreateDeviceAndResources();
-	void MoveVisual(float x, float y);
 	void Update();
-	void LoadPicture(wstring filename);
-	void LoadPicture(int resourceId, LPCTSTR type);
+	Picture LoadPicture(wstring filename);
+	Picture LoadPicture(int resourceId, LPCTSTR type);
 
-	wstring OpenFile();
-	
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	LRESULT Handle_WM_PAINT(WPARAM wParam, LPARAM lParam);
 	LRESULT Handle_WM_SIZE(WPARAM wParam, LPARAM lParam);
 	LRESULT Handle_WM_LBUTTONDOWN(WPARAM wParam, LPARAM lParam);
 	LRESULT Handle_WM_LBUTTONUP(WPARAM wParam, LPARAM lParam);
+	LRESULT Handle_WM_RBUTTONDOWN(WPARAM wParam, LPARAM lParam);
 	LRESULT Handle_WM_MOUSEMOVE(WPARAM wParam, LPARAM lParam);
 	LRESULT Handle_WM_MOUSEWHEEL(WPARAM wParam, LPARAM lParam);
 	LRESULT Handle_WM_KEYDOWN(WPARAM wParam, LPARAM lParam);
@@ -51,8 +39,7 @@ public:
 	Application(UINT width, UINT height, HINSTANCE hInstance) :
 		m_width(width),
 		m_height(height),
-		m_hInstance(hInstance),
-		m_offset{}
+		m_hInstance(hInstance)
 	{}
 
 	int Run(int nCmdShow)
@@ -82,7 +69,7 @@ public:
 		auto x = (cx - w) / 2;
 		auto y = (cy - h) / 2;
 		
-		m_hWnd = CreateWindowEx(WS_EX_ACCEPTFILES, wc.lpszClassName, L"DComposition显示图片", WS_OVERLAPPEDWINDOW,
+		m_hWnd = CreateWindowEx(WS_EX_ACCEPTFILES|0, wc.lpszClassName, L"DComposition显示图片", WS_OVERLAPPEDWINDOW,
 			x, y, w, h, nullptr, nullptr, m_hInstance, nullptr);
 
 		CreateDeviceAndResources();

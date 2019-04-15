@@ -13,6 +13,7 @@ LRESULT CALLBACK Application::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 		HANDLE_MSG(WM_KEYDOWN);
 		HANDLE_MSG(WM_LBUTTONDOWN);
 		HANDLE_MSG(WM_LBUTTONUP);
+		HANDLE_MSG(WM_RBUTTONDOWN);
 		HANDLE_MSG(WM_MOUSEMOVE);
 		HANDLE_MSG(WM_MOUSEWHEEL);
 		HANDLE_MSG(WM_DROPFILES);
@@ -35,14 +36,38 @@ LRESULT Application::Handle_WM_PAINT(WPARAM wParam, LPARAM lParam)
 
 bool flag = false;
 short x, y;
+Picture* selected;
 
 ///<summary>处理WM_LBUTTONDOWN消息，鼠标左键按下时触发</summary>
 ///<param name="wParam">表示是否有虚拟按键按下，如MK_CONTROL等</param>
 ///<param name="lParam">相对于客户区左上角的光标的坐标</param>
 LRESULT Application::Handle_WM_LBUTTONDOWN(WPARAM wParam, LPARAM lParam)
 {
-	flag = true;
-	x = (short)LOWORD(lParam);y = (short)HIWORD(lParam);
+	x = (short)LOWORD(lParam); y = (short)HIWORD(lParam);
+
+	for (auto& bmp : m_bmps)
+	{
+		if (bmp.Contains({ (float)x,(float)y }))
+		{
+			flag = true;
+			selected = &bmp;
+
+			m_root->RemoveVisual(selected->visual.Get());
+			m_root->AddVisual(selected->visual.Get(), false, nullptr);
+			m_device->Commit();
+
+			auto temp = bmp;
+			m_bmps.remove(bmp);
+			m_bmps.push_front(temp);
+
+			selected = &m_bmps.front();
+			break;
+		}
+	}
+	RECT rc;
+	GetWindowRect(m_hWnd, &rc);
+	ClipCursor(&rc);
+	
 	return 0;
 }
 
@@ -51,10 +76,33 @@ LRESULT Application::Handle_WM_LBUTTONDOWN(WPARAM wParam, LPARAM lParam)
 ///<param name="lParam">相对于客户区左上角的光标的坐标</param>
 LRESULT Application::Handle_WM_LBUTTONUP(WPARAM wParam, LPARAM lParam)
 {
-	flag = false;
-	ReleaseCapture();
-	m_offset.x = m_offset.x + (short)LOWORD(lParam) - x;
-	m_offset.y = m_offset.y + (short)HIWORD(lParam) - y;
+	if (flag)
+	{
+		flag = false;
+
+		selected->offset.x = selected->offset.x + (short)LOWORD(lParam) - x;
+		selected->offset.y = selected->offset.y + (short)HIWORD(lParam) - y;
+
+		selected = nullptr;
+
+		ReleaseCapture();
+	}
+	ClipCursor(nullptr);
+	return 0;
+}
+
+LRESULT Application::Handle_WM_RBUTTONDOWN(WPARAM wParam, LPARAM lParam)
+{
+	for (auto& bmp : m_bmps)
+	{
+		if (bmp.Contains({ (float)LOWORD(lParam),(float)HIWORD(lParam) }))
+		{
+			bmp.visual->SetEffect(Helper::CreateEffect1(m_device.Get(), 360,
+				bmp.sizef.width / 2, bmp.sizef.height / 2, 0).Get());
+			m_device->Commit();
+			break;
+		}
+	}
 	return 0;
 }
 
@@ -69,7 +117,10 @@ LRESULT Application::Handle_WM_MOUSEMOVE(WPARAM wParam, LPARAM lParam)
 		auto dx = (short)LOWORD(lParam) - x;
 		auto dy = (short)HIWORD(lParam) - y;
 
-		MoveVisual(m_offset.x+dx, m_offset.y+dy);
+		selected->visual->SetOffsetX(selected->offset.x + dx);
+		selected->visual->SetOffsetY(selected->offset.y + dy);
+
+		m_device->Commit();
 	}
 	return 0;
 }
@@ -120,7 +171,6 @@ LRESULT Application::Handle_WM_MOUSEWHEEL(WPARAM wParam, LPARAM lParam)
 	{
 
 	}
-	Update();
 	return 0;
 }
 
@@ -134,8 +184,16 @@ LRESULT Application::Handle_WM_DROPFILES(WPARAM wParam, LPARAM lParam)
 {
 	auto hDrop = (HDROP)wParam;
 	TCHAR filename[MAX_PATH];
-	DragQueryFile(hDrop, 0, filename, _countof(filename));
-	LoadPicture(filename);
+	UINT count = DragQueryFile(hDrop, -1, nullptr, 0);
+	for (UINT i = 0; i < count; i++)
+	{
+		DragQueryFile(hDrop, i, filename, _countof(filename));
+		auto pic = LoadPicture(filename);
+		m_root->AddVisual(pic.visual.Get(), false, nullptr);
+
+		m_bmps.push_front(pic);
+	}
+	m_device->Commit();
 	return 0;
 }
 
@@ -144,12 +202,28 @@ LRESULT Application::Handle_WM_COMMAND(WPARAM wParam, LPARAM lParam)
 	switch (LOWORD(wParam))
 	{
 	case ID_OPENFILE:
-		LoadPicture(OpenFile());
-		break;
+	{
+		auto bmp = LoadPicture(Helper::OpenFile(m_hWnd));
+		if (bmp.data)
+		{
+			m_root->AddVisual(bmp.visual.Get(), false, nullptr);
+			m_device->Commit();
+			m_bmps.push_front(bmp);
+		}
+	}
+	break;
 	case ID_SAVEFILE:
+		break;
+	case ID_CLEAR:
+		m_root->RemoveAllVisuals();
+		m_bmps.clear();
+		m_device->Commit();
 		break;
 	case ID_CLOSE:
 		DestroyWindow(m_hWnd);
+		break;
+	case ID_SMALL_ICON:
+
 		break;
 	}
 	return 0;
