@@ -15,6 +15,13 @@ using std::wstring;
 #pragma comment(lib, "dcomp")
 #pragma comment(lib, "windowscodecs")
 
+enum class UI_STATE : DWORD
+{
+	UI_STATE_NORMAL,
+	UI_STATE_HOVER,
+	UI_STATE_PUSH,
+};
+
 class Application
 {
 	HINSTANCE m_hInstance;
@@ -29,6 +36,8 @@ class Application
 	ComPtr<ID2D1SolidColorBrush>		m_brush;			//一支纯色画笔
 	ComPtr<ID2D1Bitmap1>				m_bmp;				//一幅待显示位图
 	D2D1_SIZE_U							m_bmpSize;			//位图尺寸
+
+	UI_STATE							m_state;
 
 	void Initialize()					//初始化资源
 	{
@@ -121,14 +130,31 @@ class Application
 			dc->SetTransform(D2D1::Matrix3x2F::Translation((float)offset.x, (float)offset.y));
 
 			D2D1_RECT_F rcBmp = {
-				(m_width - m_bmpSize.width) / 2.f,
-				(m_height - m_bmpSize.height) / 2.f,
-				(m_width + m_bmpSize.width) / 2.f,
-				(m_height + m_bmpSize.height) / 2.f,
+				(int)(m_width - m_bmpSize.width) / 2,
+				(int)(m_height - m_bmpSize.height) / 2,
+				(int)(m_width + m_bmpSize.width) / 2,
+				(int)(m_height + m_bmpSize.height) / 2,
 			};
-
+			float border = 2.0f;
+			D2D1_COLOR_F color;
+			switch(m_state)
+			{
+			case UI_STATE::UI_STATE_NORMAL:
+				border = 2.0f;
+				color = D2D1::ColorF(0x2255ff);
+				break;
+			case UI_STATE::UI_STATE_PUSH:
+				border = 4.0f;
+				color = D2D1::ColorF(0xFF55ff);
+				break;
+			case UI_STATE::UI_STATE_HOVER:
+				border = 2.0f;
+				color = D2D1::ColorF(0xFF2244);
+				break;
+			}
+			m_brush->SetColor(color);
 			dc->DrawBitmap(m_bmp.Get(), rcBmp);
-			dc->DrawRectangle(rcBmp, m_brush.Get(),2);
+			dc->DrawRectangle(rcBmp, m_brush.Get(), border);
 		}
 		m_surface->EndDraw();
 		m_device->Commit();
@@ -141,6 +167,60 @@ class Application
 		Update();
 	}
 
+	void HandleButtonDown(WPARAM wParam, LPARAM lParam)
+	{
+		RECT rc = { (int)(m_width - m_bmpSize.width) / 2, (int)(m_height - m_bmpSize.height) / 2, (int)(m_width + m_bmpSize.width) / 2, (int)(m_height + m_bmpSize.height) / 2, };
+		if (PtInRect(&rc, { LOWORD(lParam), HIWORD(lParam) }))
+		{
+			m_state = UI_STATE::UI_STATE_PUSH;
+			Update();
+		}
+	}
+
+	void HandleButtonUp(WPARAM wParam, LPARAM lParam)
+	{
+		RECT rc = { (int)(m_width - m_bmpSize.width) / 2, (int)(m_height - m_bmpSize.height) / 2, (int)(m_width + m_bmpSize.width) / 2, (int)(m_height + m_bmpSize.height) / 2, };
+		if (PtInRect(&rc, { LOWORD(lParam), HIWORD(lParam) }))
+		{
+			m_state = UI_STATE::UI_STATE_HOVER;
+			Update();
+		}
+		else 
+		{
+			m_state = UI_STATE::UI_STATE_NORMAL;
+			Update();
+		}
+	}
+
+	void HandleMouseMove(WPARAM wParam, LPARAM lParam)
+	{
+		RECT rc = { (int)(m_width - m_bmpSize.width) / 2, (int)(m_height - m_bmpSize.height) / 2, (int)(m_width + m_bmpSize.width) / 2, (int)(m_height + m_bmpSize.height) / 2, };
+		if (PtInRect(&rc, { LOWORD(lParam), HIWORD(lParam) }))
+		{
+			if (m_state == UI_STATE::UI_STATE_PUSH)
+			{
+				return;
+			}
+			else if (m_state != UI_STATE::UI_STATE_HOVER)
+			{
+				m_state = UI_STATE::UI_STATE_HOVER;
+				Update();
+			}
+		}
+		else 
+		{
+			if (m_state == UI_STATE::UI_STATE_PUSH)
+			{
+				return;
+			}
+			else if (m_state != UI_STATE::UI_STATE_NORMAL)
+			{
+				m_state = UI_STATE::UI_STATE_NORMAL;
+				Update();
+			}
+		}
+	}
+
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
 		auto app = reinterpret_cast<Application*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
@@ -148,6 +228,15 @@ class Application
 		{
 		case WM_SIZE:
 			app->Resize(LOWORD(lParam), HIWORD(lParam));
+			break;
+		case WM_LBUTTONDOWN:
+			app->HandleButtonDown(wParam, lParam);
+			break;
+		case WM_LBUTTONUP:
+			app->HandleButtonUp(wParam, lParam);
+			break;
+		case WM_MOUSEMOVE:
+			app->HandleMouseMove(wParam, lParam);
 			break;
 		case WM_DESTROY:
 			PostQuitMessage(0);
@@ -161,7 +250,9 @@ public:
 	Application(UINT width, UINT height, HINSTANCE hInstance) :
 		m_width(width),
 		m_height(height),
-		m_hInstance(hInstance) {}
+		m_hInstance(hInstance),
+		m_state(UI_STATE::UI_STATE_NORMAL)
+	{}
 
 	int Run(int nCmdShow)
 	{
@@ -181,7 +272,7 @@ public:
 		RegisterClassEx(&wc);
 
 		DWORD style = WS_OVERLAPPEDWINDOW; DWORD styleEx = 0;
-		RECT rc = { 0,0,(LONG)m_width,(LONG)m_height};
+		RECT rc = { 0,0,(LONG)m_width,(LONG)m_height };
 		AdjustWindowRectEx(&rc, style, false, styleEx);
 		auto cx = GetSystemMetrics(SM_CXSCREEN);
 		auto cy = GetSystemMetrics(SM_CYFULLSCREEN);
@@ -211,5 +302,5 @@ public:
 int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, INT nCmdShow)
 {
 	CoInitialize(nullptr);
-	return Application(1280, 720, hInstance).Run(nCmdShow);
+	return Application(720, 540, hInstance).Run(nCmdShow);
 }
